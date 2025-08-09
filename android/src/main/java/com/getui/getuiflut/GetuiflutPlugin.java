@@ -1,12 +1,10 @@
 package com.getui.getuiflut;
 
 import android.content.Context;
-import android.content.Intent;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
-import android.os.Handler;
-
 
 import com.igexin.sdk.PushManager;
 import com.igexin.sdk.Tag;
@@ -32,7 +30,6 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
     private static final int FLUTTER_CALL_BACK_MSG = 2;
     private static final int FLUTTER_CALL_BACK_MSG_USER = 3;
 
-
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
     /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -52,6 +49,7 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
         channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "getuiflut");
         channel.setMethodCallHandler(this);
         Log.d("flutterHandler", "GetuiflutPlugin onAttachedToEngine ");
+//        GeTuiContextHolder.setApplicationContext(flutterPluginBinding.getApplicationContext());
     }
 
     @Override
@@ -117,10 +115,10 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
                     } else if (msg.arg1 == MessageType.onSetTagResult.ordinal()) {
                         GetuiflutPlugin.instance.channel.invokeMethod("onSetTagResult", msg.obj);
                         Log.d("flutterHandler", "onSetTagResult >>> " + msg.obj);
-                    }  else if (msg.arg1 == MessageType.onAliasResult.ordinal()) {
+                    } else if (msg.arg1 == MessageType.onAliasResult.ordinal()) {
                         GetuiflutPlugin.instance.channel.invokeMethod("onAliasResult", msg.obj);
                         Log.d("flutterHandler", "onAliasResult >>> " + msg.obj);
-                    }  else if (msg.arg1 == MessageType.onQueryTagResult.ordinal()) {
+                    } else if (msg.arg1 == MessageType.onQueryTagResult.ordinal()) {
                         GetuiflutPlugin.instance.channel.invokeMethod("onQueryTagResult", msg.obj);
                         Log.d("flutterHandler", "onQueryTagResult >>> " + msg.obj);
                     } else {
@@ -157,7 +155,7 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
             bindAlias(call.argument("alias").toString(), call.argument("aSn").toString());
         } else if (call.method.equals("unbindAlias")) {
             Log.d(TAG, "unbindAlias:" + call.argument("alias").toString() + call.argument("aSn").toString() + call.argument("isSelf").toString());
-            unbindAlias(call.argument("alias").toString(), call.argument("aSn").toString(), Boolean.parseBoolean( call.argument("isSelf").toString()));
+            unbindAlias(call.argument("alias").toString(), call.argument("aSn").toString(), Boolean.parseBoolean(call.argument("isSelf").toString()));
         } else if (call.method.equals("setTag")) {
             Log.d(TAG, "tags:" + (ArrayList<String>) call.argument("tags"));
             setTag((ArrayList<String>) call.argument("tags"));
@@ -167,6 +165,42 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
         } else if (call.method.equals("setBadge")) {
             Log.d(TAG, "do setBadge");
             setBadge((int) call.argument("badge"));
+        } else if (call.method.equals("startBackgroundIsolate")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> arguments = ((Map<String, Object>) call.arguments);
+
+            long pluginCallbackHandle;
+            long userCallbackHandle;
+
+            Object arg1 = arguments.get("pluginCallbackHandle");
+            Object arg2 = arguments.get("userCallbackHandle");
+
+            if (arg1 instanceof Long) {
+                pluginCallbackHandle = (Long) arg1;
+            } else if (arg1 instanceof Integer) {
+                pluginCallbackHandle = Long.valueOf((Integer) arg1);
+            } else {
+                result.success(null);
+                throw new IllegalArgumentException(
+                        "Expected 'Long' or 'Integer' type for 'pluginCallbackHandle'.");
+            }
+
+            if (arg2 instanceof Long) {
+                userCallbackHandle = (Long) arg2;
+            } else if (arg2 instanceof Integer) {
+                userCallbackHandle = Long.valueOf((Integer) arg2);
+            } else {
+                result.success(null);
+                throw new IllegalArgumentException(
+                        "Expected 'Long' or 'Integer' type for 'userCallbackHandle'.");
+            }
+
+            Log.d("StartIsolate", "init");
+            GeTuiContextHolder.setApplicationContext(fContext);
+            GetuiMessagingBackgroundExecutor.setCallbackDispatcher(pluginCallbackHandle);
+            GetuiMessagingBackgroundExecutor.setUserCallbackHandle(userCallbackHandle);
+            GetuiMessagingBackgroundExecutor.create(pluginCallbackHandle);
+            result.success(null);
         } else {
             result.notImplemented();
         }
@@ -276,9 +310,9 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
             type = StateType.onReceiveClientId.ordinal();
         } else if (func.equals("onReceiveOnlineState")) {
             type = StateType.onReceiveOnlineState.ordinal();
-        } else if(func.equals("onReceiveCommandResult")){
+        } else if (func.equals("onReceiveCommandResult")) {
             type = StateType.onReceiveCommandResult.ordinal();
-        }else {
+        } else {
             type = StateType.Default.ordinal();
         }
         Message msg = Message.obtain();
@@ -298,11 +332,9 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
             type = MessageType.onReceiveMessageData.ordinal();
         } else if (func.equals("onNotificationMessageArrived")) {
             type = MessageType.onNotificationMessageArrived.ordinal();
-        }
-        else if (func.equals("onNotificationMessageClicked")) {
+        } else if (func.equals("onNotificationMessageClicked")) {
             type = MessageType.onNotificationMessageClicked.ordinal();
-        }
-        else if (func.equals("onSetTagResult")) {
+        } else if (func.equals("onSetTagResult")) {
             type = MessageType.onSetTagResult.ordinal();
         } else if (func.equals("onAliasResult")) {
             type = MessageType.onAliasResult.ordinal();
