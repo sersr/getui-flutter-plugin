@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'dart:io';
+
+import 'package:flutter/widgets.dart';
 
 typedef Future<dynamic> EventHandler(String res);
 typedef Future<dynamic> EventHandlerBool(bool res);
@@ -310,4 +313,64 @@ class Getuiflut {
       _channel.invokeMethod('registerRemoteNotification');
     }
   }
+
+  static bool _bgHandlerInitialized = false;
+  static void startBackgroundMessage(
+      void Function(Map<String, dynamic>) onMessage) async {
+    if (Platform.isAndroid) {
+      if (!_bgHandlerInitialized) {
+        _bgHandlerInitialized = true;
+        final CallbackHandle bgHandle = PluginUtilities.getCallbackHandle(
+          _background,
+        )!;
+        final CallbackHandle userHandle =
+            PluginUtilities.getCallbackHandle(onMessage)!;
+        await _channel.invokeMapMethod('startBackgroundIsolate', {
+          'pluginCallbackHandle': bgHandle.toRawHandle(),
+          'userCallbackHandle': userHandle.toRawHandle(),
+        });
+      }
+    }
+  }
+}
+
+@pragma('vm:entry-point')
+void _background() async {
+  print(".........gettui background: init....");
+  // Initialize state necessary for MethodChannels.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  const MethodChannel channel = MethodChannel(
+    'chat.qqlink.com/background_message',
+  );
+  // This is where we handle background events from the native portion of the plugin.
+  channel.setMethodCallHandler((MethodCall call) async {
+    if (call.method == 'MessagingBackground#onMessage') {
+      final CallbackHandle handle =
+          CallbackHandle.fromRawHandle(call.arguments['userCallbackHandle']);
+
+      // PluginUtilities.getCallbackFromHandle performs a lookup based on the
+      // callback handle and returns a tear-off of the original callback.
+      final closure = PluginUtilities.getCallbackFromHandle(handle)!
+          as Future<void> Function(Map<String, dynamic>);
+
+      try {
+        Map<String, dynamic> messageMap =
+            Map<String, dynamic>.from(call.arguments['message']);
+        await closure(messageMap);
+      } catch (e) {
+        // ignore: avoid_print
+        print(
+            'FlutterFire Messaging: An error occurred in your background messaging handler:');
+        // ignore: avoid_print
+        print(e);
+      }
+    } else {
+      throw UnimplementedError('${call.method} has not been implemented');
+    }
+  });
+
+  // Once we've finished initializing, let the native portion of the plugin
+  // know that it can start scheduling alarms.
+  channel.invokeMethod<void>('MessagingBackground#initialized');
 }

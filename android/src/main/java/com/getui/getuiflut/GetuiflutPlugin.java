@@ -38,7 +38,7 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
     private Context fContext;
 
     public static GetuiflutPlugin instance;
-
+    private static Map<String, Object> clickMessage;
     public GetuiflutPlugin() {
         Log.d("flutterHandler", "GetuiflutPlugin init ");
     }
@@ -144,6 +144,10 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
             result.success("Android " + android.os.Build.VERSION.RELEASE);
         } else if (call.method.equals("initGetuiPush")) {
             initGtSdk();
+            if (clickMessage != null) {
+                transmitMessageReceive(clickMessage, "onNotificationMessageClicked");
+                clickMessage = null;
+            }
         } else if (call.method.equals("getClientId")) {
             result.success(getClientId());
         } else if (call.method.equals("resume")) {
@@ -325,6 +329,9 @@ public class GetuiflutPlugin implements MethodCallHandler, FlutterPlugin {
     static void transmitMessageReceive(Map<String, Object> message, String func) {
         if (instance == null) {
             Log.d(TAG, "Getui flutter plugin doesn't exist");
+            if (func.equals("onNotificationMessageClicked")) {
+                clickMessage = message;
+            }
             return;
         }
         int type;

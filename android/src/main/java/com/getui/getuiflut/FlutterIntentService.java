@@ -327,7 +327,7 @@ public class FlutterIntentService extends GTIntentService {
     public void onNotificationMessageArrived(Context context, GTNotificationMessage message) {
         Log.d(TAG, "onNotificationMessageArrived -> " + "appid = " + message.getAppid() + "\ntaskid = " + message.getTaskId() + "\nmessageid = "
                 + message.getMessageId() + "\npkg = " + message.getPkgName() + "\ncid = " + message.getClientId() + "\ntitle = "
-                + message.getTitle() + "\ncontent = " + message.getContent() + message.getPayload());
+                + message.getTitle() + "\ncontent = " + message.getContent() +"\npayload = " + message.getPayload());
         Map<String, Object> notification = new HashMap<String, Object>();
         notification.put("messageId",message.getMessageId());
         notification.put("taskId",message.getTaskId());
@@ -346,8 +346,7 @@ public class FlutterIntentService extends GTIntentService {
 
         GetuiMessagingBackgroundExecutor.create();
         if (GetuiflutPlugin.instance == null && GetuiMessagingBackgroundExecutor.backgroundExecutor != null) {
-            Log.i("fafafagettui", "receive......");
-            if (GetuiMessagingBackgroundExecutor.backgroundExecutor.isNotRunning()) {
+             if (GetuiMessagingBackgroundExecutor.backgroundExecutor.isNotRunning()) {
                 lastMessage = notification;
                 return;
             }
@@ -367,6 +366,8 @@ public class FlutterIntentService extends GTIntentService {
         notification.put("taskId",message.getTaskId());
         notification.put("title",message.getTitle());
         notification.put("content",message.getContent());
+        notification.put("payload",message.getPayload());
+
         GetuiflutPlugin.transmitMessageReceive(notification, "onNotificationMessageClicked");
     }
 }
