@@ -36,7 +36,7 @@ public class FlutterIntentService extends GTIntentService {
         if (intent != null) {
             processOnHandleIntent(this, intent);
         }
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     public void processOnHandleIntent(Context context, Intent intent) {
